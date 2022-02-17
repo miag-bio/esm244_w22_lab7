@@ -148,6 +148,7 @@ tmap_mode(mode = "view")
 
 tm_shape(ca_subset_sf) +
   tm_fill("land_area", palette = "BuGn") +
+  tm_borders(col = "black") +
 tm_shape(sesbania_3857_sf)+
   tm_dots()
 ```
