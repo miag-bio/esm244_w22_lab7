@@ -1,0 +1,127 @@
+---
+title: "Lab7 - spatial data"
+author: "Mia Guarnieri"
+date: "2/17/2022"
+output: html_document
+---
+
+```{r setup, include = TRUE, message = FALSE, warning = FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(tidyverse)
+library(here)
+library(broom)
+library(sf)
+library(tmap)
+```
+
+# Part 1: spatial data wrangling, visualization
+
+## California county outlines (polygons)
+
+```{r}
+#can label this sf for "simple features" to show it's a spatial df
+
+ca_counties_sf <- read_sf(here("data", "ca_counties", "CA_Counties_TIGER2016.shp"))
+
+ca_subset_sf <- ca_counties_sf %>% 
+  janitor::clean_names() %>% 
+  select(county_name = name,
+         land_area = aland)
+
+#sf objects have "sticky geometry" - will always include a geometry column even if I don't select it specifically
+
+#to eliminate the geometry column (i.e., for an output table) - force it to become a non-sf df
+
+ca_counties_df <- ca_counties_sf %>% 
+  as.data.frame() %>% 
+  select(-geometry)
+```
+
+## Examine and set CRS (coordinate reference system)
+
+```{r}
+ca_subset_sf %>% 
+  st_crs()
+
+#ID["EPSG",3857]]
+
+ca_subset_sf %>% 
+  raster::crs()
+```
+
+## Plot
+
+```{r}
+ggplot(data = ca_subset_sf) +
+  geom_sf(aes(fill = land_area),
+          color = "white",
+          site = 0.1) +
+  theme_void() +
+  scale_fill_gradientn(colors = c("cyan", "blue", "purple"))
+```
+
+##Invasive red sesbania records (spatial points)
+
+```{r}
+sesbania_sf <- read_sf(here("data", "red_sesbania", "ds80.shp")) %>% 
+  janitor::clean_names()
+
+#check CRS:
+sesbania_sf %>% 
+  st_crs()
+
+#ID["EPSG",9001]]]]
+
+sesbania_sf %>% 
+  raster::crs()
+
+#can use EPSG code to set CRS
+sesbania_3857_sf <- st_transform(sesbania_sf, 3857)
+
+#check new crs
+sesbania_3857_sf %>% st_crs()
+
+
+#if you don't know ESPG
+sesbania_3857_2_sf <- st_transform(sesbania_sf, st_crs(ca_subset_sf))
+
+#check CRS
+st_crs(sesbania_3857_2_sf)
+```
+
+# Plot them together
+
+```{r}
+ggplot() +
+  geom_sf(data = ca_subset_sf) +
+  geom_sf(data = sesbania_3857_sf, size = 1, color = "red")
+```
+
+## Wrangle to find sesbania observations per county
+
+```{r}
+ca_sesb_sf <- ca_subset_sf %>% 
+  st_join(sesbania_3857_sf)
+
+head(ca_sesb_sf)
+
+#count by county
+sesb_counts_sf <- ca_sesb_sf %>% 
+  group_by(county_name) %>% 
+  summarize(n_records = sum(!is.na(id)))
+
+head(sesb_counts_sf)
+```
+
+## Plot
+
+```{r}
+ggplot(data = sesb_counts_sf) +
+  geom_sf(aes(fill = n_records), color = "white", size = 0.1) +
+  scale_fill_gradientn(colors = c("lightgrey", "orange", "red")) +
+  theme_minimal() +
+  labs(fill = "Number of S. punicea records")
+```
+
+
