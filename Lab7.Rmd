@@ -124,4 +124,35 @@ ggplot(data = sesb_counts_sf) +
   labs(fill = "Number of S. punicea records")
 ```
 
+## Filter to just occurrences in Solano County
+
+```{r}
+#subset based on solano county
+solano_sesb_sf <- sesbania_3857_sf %>% 
+  filter(county == "Solano")
+
+#subset counties based on Solano
+solano_sf <- ca_subset_sf %>% 
+  filter(county_name == "Solano")
+
+ggplot() +
+  geom_sf(data = solano_sf) +
+  geom_sf(data = solano_sesb_sf, color = "red")
+```
+
+# practice with tmap
+
+```{r}
+#make a static map
+tmap_mode(mode = "view")
+
+tm_shape(ca_subset_sf) +
+  tm_fill("land_area", palette = "BuGn") +
+tm_shape(sesbania_3857_sf)+
+  tm_dots()
+```
+
+
+
+
 
