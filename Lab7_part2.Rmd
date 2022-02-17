@@ -1,0 +1,48 @@
+---
+title: "Lab 7 Part 2 - Kriging"
+author: "Mia Guarnieri"
+date: "2/17/2022"
+output: html_document
+---
+
+```{r setup, include = TRUE, warning = FALSE, message = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+library(tidyverse)
+library(here)
+library(sf)
+library(tmap)
+library(gstat)
+library(stars)
+```
+
+# Read in CA map and groundwater depth data
+
+```{r}
+#read in counties
+ca_counties_sf <- read_sf(here("data", "ca_counties"), 
+                               layer = "CA_Counties_TIGER2016") %>% 
+  janitor::clean_names() %>% 
+  select(name)
+
+#check projection
+st_crs(ca_counties_sf)
+
+#read in groundwater depth data
+ca_dgw_sf <- read_sf(here("data", "ca_dgw", "F2013_DBGS_Points_20150720_093252.gpkg")) %>% 
+  janitor::clean_names()
+
+st_crs(ca_dgw_sf)
+
+ca_dgw_sf <- st_transform(ca_dgw_sf, st_crs(ca_counties_sf))
+
+ggplot() +
+  geom_sf(data = ca_counties_sf)+
+  geom_sf(data = ca_dgw_sf, aes(color = dgbs))
+```
+
+# More tmap
+
+
+
+
