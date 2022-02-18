@@ -43,6 +43,74 @@ ggplot() +
 
 # More tmap
 
+```{r}
+tmap_mode(mode = "view")
+
+tm_shape(ca_dgw_sf) +
+  tm_dots("dgbs", palette = "Blues")
+
+#tmaptools::palette_explorere() -- can mess around with this later
+#need the shinyjs package
+```
+
+# Clip to just San Joaquin County
+
+```{r}
+sj_county_sf <- ca_counties_sf %>% 
+  filter(name == "San Joaquin")
+
+#keep observations for groundwter depth in that county
+sj_depth_sf <- ca_dgw_sf %>% 
+  st_intersection(sj_county_sf)
+
+ggplot() +
+  geom_sf(data = sj_county_sf) +
+  geom_sf(data = sj_depth_sf, aes(color = dgbs)) +
+  theme_void() +
+  scale_color_viridis_c()
+```
+## Check for duplicate locations
+
+```{r}
+well_duplicates <- sj_depth_sf %>% 
+  janitor::get_dupes(latitude, longitude)
+
+sj_depth_sf <- sj_depth_sf %>% 
+  filter(!local_well %in% well_duplicates$local_well)
+```
+
+# Create a variogram
+
+```{r}
+sj_dgw_vgm <- variogram(dgbs ~ 1, data = sj_depth_sf) 
+#will calculate an intercept it will use as a mean for ordinary kriging
+
+plot(sj_dgw_vgm)
+```
+
+## Create the vriogram model
+
+```{r}
+sj_dgw_vgm_fit <- fit.variogram(sj_dgw_vgm,
+                                model = vgm(model="Gau",
+                                            nugget = 20,
+                                            sill = 3000,
+                                            range = 32000))
+
+plot(sj_dgw_vgm, sj_dgw_vgm_fit)
+```
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
