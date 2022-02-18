@@ -98,8 +98,36 @@ sj_dgw_vgm_fit <- fit.variogram(sj_dgw_vgm,
                                             range = 32000))
 
 plot(sj_dgw_vgm, sj_dgw_vgm_fit)
+
+attr(sj_dgw_vgm_fit, "SSErr") #gives the standard error for model comparison
 ```
 
+# Spatial kriging
+
+```{r}
+#create the grid
+sj_grid <- st_bbox(sj_county_sf) %>% 
+  st_as_stars(dx = 1000, dy = 1000) %>% 
+  st_set_crs(st_crs(sj_county_sf)) %>% 
+  st_crop(sj_county_sf)
+
+sj_grid
+plot(sj_grid)
+
+#perform ordinary kirging
+sj_dgw_krige <- krige(dgbs ~1, sj_depth_sf, sj_grid, model = sj_dgw_vgm_fit)
+
+plot(sj_dgw_krige)
+
+#vectorizing the data
+krige_df <- as.data.frame(sj_dgw_krige) %>% #take a krige object (stars output = grid of values with non-spatial coordinates) and make it a dataframe with x and y columns, and predicted value columns for each x/y pair
+  st_as_sf(coords = c('x', 'y')) %>% #convert dataframe to an sf object which turns x,y coords into points and assign them values based on the predictions 
+  drop_na(var1.pred)
+
+ggplot(data = krige_df) +
+  geom_sf(aes(color = var1.pred)) +
+  scale_color_gradient(low = "blue", high = "yellow")
+```
 
 
 
